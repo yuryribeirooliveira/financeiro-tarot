@@ -272,7 +272,7 @@ body{background:var(--bg);color:var(--text);font-family:"Poppins",sans-serif;fon
     <button class="period-btn" onclick="setPeriod('tudo')">Tudo</button>
   </div>
   <div class="metric-grid" id="metrics"></div>
-  <div class="card" style="padding:16px">
+  <div class="card" id="chart-card" style="padding:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="margin:0">Evolução da receita</div>
       <span id="chart-period-label" style="font-size:11px;color:var(--text3);font-weight:500"></span>
@@ -280,7 +280,6 @@ body{background:var(--bg);color:var(--text);font-family:"Poppins",sans-serif;fon
     <div style="position:relative;height:140px">
       <canvas id="revenue-chart"></canvas>
     </div>
-    <div id="chart-empty" class="empty-state" style="display:none;padding:1rem">Sem dados para o período</div>
   </div>
   <div class="card">
     <div class="card-title">Receita por serviço</div>
@@ -801,17 +800,17 @@ let revenueChart = null;
 
 function renderChart(filtered) {
   const canvas = document.getElementById('revenue-chart');
-  const empty = document.getElementById('chart-empty');
   const label = document.getElementById('chart-period-label');
 
-  if (!filtered.length) {
-    canvas.style.display = 'none';
-    empty.style.display = '';
+  const card = document.getElementById('chart-card');
+  // Verificar se há ao menos um registro com valor > 0 no período
+  const hasData = filtered.some(e => Number(e.valor) > 0);
+  if (!filtered.length || !hasData) {
+    card.style.display = 'none';
     if (revenueChart) { revenueChart.destroy(); revenueChart = null; }
     return;
   }
-  canvas.style.display = 'block';
-  empty.style.display = 'none';
+  card.style.display = 'block';
 
   // Agrupar por data
   const agg = {};
@@ -822,7 +821,7 @@ function renderChart(filtered) {
 
   // Gerar range de datas
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  const today = localDateStr(now);
   let dates = [];
 
   if (currentPeriod === 'hoje') {
@@ -831,13 +830,13 @@ function renderChart(filtered) {
   } else if (currentPeriod === '7d') {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now); d.setDate(d.getDate() - i);
-      dates.push(d.toISOString().slice(0, 10));
+      dates.push(localDateStr(d));
     }
     label.textContent = 'últimos 7 dias';
   } else if (currentPeriod === '30d') {
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now); d.setDate(d.getDate() - i);
-      dates.push(d.toISOString().slice(0, 10));
+      dates.push(localDateStr(d));
     }
     label.textContent = 'últimos 30 dias';
   } else if (currentPeriod === 'mes') {
